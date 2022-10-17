@@ -1,5 +1,10 @@
 package top.guoziyang.mydb.backend.dm.pageCache;
 
+import top.guoziyang.mydb.backend.common.AbstractCache;
+import top.guoziyang.mydb.backend.dm.page.Page;
+import top.guoziyang.mydb.backend.dm.page.PageImpl;
+import top.guoziyang.mydb.backend.utils.Panic;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -7,12 +12,6 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import top.guoziyang.mydb.backend.common.AbstractCache;
-import top.guoziyang.mydb.backend.dm.page.Page;
-import top.guoziyang.mydb.backend.dm.page.PageImpl;
-import top.guoziyang.mydb.backend.utils.Panic;
-import top.guoziyang.mydb.common.Error;
 
 public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
     
@@ -25,11 +24,7 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
 
     private AtomicInteger pageNumbers;
 
-    PageCacheImpl(RandomAccessFile file, FileChannel fileChannel, int maxResource) {
-        super(maxResource);
-        if(maxResource < MEM_MIN_LIM) {
-            Panic.panic(Error.MemTooSmallException);
-        }
+    PageCacheImpl(RandomAccessFile file, FileChannel fileChannel) {
         long length = 0;
         try {
             length = file.length();
@@ -42,15 +37,15 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
         this.pageNumbers = new AtomicInteger((int)length / PAGE_SIZE);
     }
 
-    public int newPage(byte[] initData) {
+    public Page newPage(byte[] initData) {
         int pgno = pageNumbers.incrementAndGet();
         Page pg = new PageImpl(pgno, initData, null);
         flush(pg);
-        return pgno;
+        return pg;
     }
 
     public Page getPage(int pgno) throws Exception {
-        return get((long)pgno);
+        return get(pgno);
     }
 
     /**
@@ -60,15 +55,10 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
     protected Page getForCache(long key) throws Exception {
         int pgno = (int)key;
         long offset = PageCacheImpl.pageOffset(pgno);
-
         ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
         fileLock.lock();
-        try {
-            fc.position(offset);
-            fc.read(buf);
-        } catch(IOException e) {
-            Panic.panic(e);
-        }
+        fc.position(offset);
+        fc.read(buf);
         fileLock.unlock();
         return new PageImpl(pgno, buf.array(), this);
     }
@@ -82,7 +72,7 @@ public class PageCacheImpl extends AbstractCache<Page> implements PageCache {
     }
 
     public void release(Page page) {
-        release((long)page.getPageNumber());
+        release(page.getPageNumber());
     }
 
     public void flushPage(Page pg) {
