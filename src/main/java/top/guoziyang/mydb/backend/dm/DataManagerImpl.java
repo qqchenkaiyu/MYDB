@@ -1,5 +1,6 @@
 package top.guoziyang.mydb.backend.dm;
 
+import cn.hutool.core.util.NumberUtil;
 import top.guoziyang.mydb.backend.common.AbstractCache;
 import top.guoziyang.mydb.backend.dm.dataItem.DataItem;
 import top.guoziyang.mydb.backend.dm.dataItem.DataItemImpl;
@@ -11,7 +12,6 @@ import top.guoziyang.mydb.backend.dm.pageCache.PageCache;
 import top.guoziyang.mydb.backend.dm.pageIndex.PageIndex;
 import top.guoziyang.mydb.backend.dm.pageIndex.PageInfo;
 import top.guoziyang.mydb.backend.tm.TransactionManager;
-import top.guoziyang.mydb.backend.utils.Panic;
 import top.guoziyang.mydb.backend.utils.Types;
 import top.guoziyang.mydb.common.Error;
 
@@ -24,7 +24,6 @@ public class DataManagerImpl extends AbstractCache<DataItem> implements DataMana
     Page pageOne;
 
     public DataManagerImpl(PageCache pc, Logger logger, TransactionManager tm) {
-        super(0);
         this.pc = pc;
         this.logger = logger;
         this.tm = tm;
@@ -47,40 +46,19 @@ public class DataManagerImpl extends AbstractCache<DataItem> implements DataMana
         if(raw.length > PageX.MAX_FREE_SPACE) {
             throw Error.DataTooLargeException;
         }
-
-        PageInfo pi = null;
-        for(int i = 0; i < 5; i ++) {
-            pi = pIndex.select(raw.length);
-            if (pi != null) {
-                break;
-            } else {
-                int newPgno = pc.newPage(PageX.initRaw());
-                pIndex.add(newPgno, PageX.MAX_FREE_SPACE);
-            }
-        }
-        if(pi == null) {
-            throw Error.DatabaseBusyException;
-        }
-
         Page pg = null;
-        int freeSpace = 0;
+        PageInfo pi = pIndex.select(raw.length);
+        if (pi == null) {
+            pg = pc.newPage(PageX.initRaw());
+            pi = pIndex.add(pg.getPageNumber(), PageX.MAX_FREE_SPACE);
+        }
         try {
-            pg = pc.getPage(pi.pgno);
-            byte[] log = Recover.insertLog(xid, pg, raw);
-            logger.log(log);
-
+            logger.log(Recover.insertLog(xid, pg, raw));
             short offset = PageX.insert(pg, raw);
-
-            pg.release();
             return Types.addressToUid(pi.pgno, offset);
-
         } finally {
             // 将取出的pg重新插入pIndex
-            if(pg != null) {
-                pIndex.add(pi.pgno, PageX.getFreeSpace(pg));
-            } else {
-                pIndex.add(pi.pgno, freeSpace);
-            }
+            pIndex.add(pi.pgno, PageX.getFreeSpace(pg));
         }
     }
 
@@ -120,38 +98,17 @@ public class DataManagerImpl extends AbstractCache<DataItem> implements DataMana
 
     // 在创建文件时初始化PageOne
     void initPageOne() {
-        int pgno = pc.newPage(PageOne.InitRaw());
-        assert pgno == 1;
-        try {
-            pageOne = pc.getPage(pgno);
-        } catch (Exception e) {
-            Panic.panic(e);
-        }
+        Page pageOne = pc.newPage(PageOne.InitRaw());
         pc.flushPage(pageOne);
     }
 
-    // 在打开已有文件时时读入PageOne，并验证正确性
-    boolean loadCheckPageOne() {
-        try {
-            pageOne = pc.getPage(1);
-        } catch (Exception e) {
-            Panic.panic(e);
-        }
-        return PageOne.checkVc(pageOne);
-    }
 
     // 初始化pageIndex
-    void fillPageIndex() {
+    void fillPageIndex() throws Exception {
         int pageNumber = pc.getPageNumber();
         for(int i = 2; i <= pageNumber; i ++) {
-            Page pg = null;
-            try {
-                pg = pc.getPage(i);
-            } catch (Exception e) {
-                Panic.panic(e);
-            }
+            Page pg = pc.getPage(i);
             pIndex.add(pg.getPageNumber(), PageX.getFreeSpace(pg));
-            pg.release();
         }
     }
     
