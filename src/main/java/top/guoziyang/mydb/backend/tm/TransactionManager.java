@@ -1,76 +1,36 @@
 package top.guoziyang.mydb.backend.tm;
 
+import static top.guoziyang.mydb.backend.utils.Types.writeLong;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import top.guoziyang.mydb.backend.utils.Panic;
-import top.guoziyang.mydb.common.Error;
-
 public interface TransactionManager {
-    long begin();
-    void commit(long xid);
-    void abort(long xid);
-    boolean isActive(long xid);
-    boolean isCommitted(long xid);
-    boolean isAborted(long xid);
+    long begin() throws IOException;
+    void commit(long xid) throws IOException;
+    void abort(long xid) throws IOException;
+    boolean isActive(long xid) throws IOException;
+    boolean isCommitted(long xid) throws IOException;
+    boolean isAborted(long xid) throws IOException;
     void close();
 
-    public static TransactionManagerImpl create(String path) {
-        File f = new File(path+TransactionManagerImpl.XID_SUFFIX);
-        try {
-            if(!f.createNewFile()) {
-                Panic.panic(Error.FileExistsException);
-            }
-        } catch (Exception e) {
-            Panic.panic(e);
-        }
-        if(!f.canRead() || !f.canWrite()) {
-            Panic.panic(Error.FileCannotRWException);
-        }
-
-        FileChannel fc = null;
-        RandomAccessFile raf = null;
-        try {
-            raf = new RandomAccessFile(f, "rw");
-            fc = raf.getChannel();
-        } catch (FileNotFoundException e) {
-           Panic.panic(e);
-        }
-
+    static TransactionManagerImpl create(String path) throws IOException {
+        File f = new File(path + TransactionManagerImpl.XID_SUFFIX);
+        f.createNewFile();
+        RandomAccessFile raf = new RandomAccessFile(f, "rw");
+        FileChannel fc = raf.getChannel();
         // 写空XID文件头
-        ByteBuffer buf = ByteBuffer.wrap(new byte[TransactionManagerImpl.LEN_XID_HEADER_LENGTH]);
-        try {
-            fc.position(0);
-            fc.write(buf);
-        } catch (IOException e) {
-            Panic.panic(e);
-        }
-        
+        writeLong(fc,0);
         return new TransactionManagerImpl(raf, fc);
     }
 
-    public static TransactionManagerImpl open(String path) {
-        File f = new File(path+TransactionManagerImpl.XID_SUFFIX);
-        if(!f.exists()) {
-            Panic.panic(Error.FileNotExistsException);
-        }
-        if(!f.canRead() || !f.canWrite()) {
-            Panic.panic(Error.FileCannotRWException);
-        }
-
-        FileChannel fc = null;
-        RandomAccessFile raf = null;
-        try {
-            raf = new RandomAccessFile(f, "rw");
-            fc = raf.getChannel();
-        } catch (FileNotFoundException e) {
-           Panic.panic(e);
-        }
-
+    static TransactionManagerImpl open(String path) throws IOException {
+        File f = new File(path + TransactionManagerImpl.XID_SUFFIX);
+        f.createNewFile();
+        RandomAccessFile raf = new RandomAccessFile(f, "rw");
+        FileChannel fc = raf.getChannel();
         return new TransactionManagerImpl(raf, fc);
     }
 }
