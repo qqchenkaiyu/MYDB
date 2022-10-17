@@ -2,9 +2,11 @@ package top.guoziyang.mydb.backend.vm;
 
 import top.guoziyang.mydb.backend.tm.TransactionManager;
 
+import java.io.IOException;
+
 public class Visibility {
     
-    public static boolean isVersionSkip(TransactionManager tm, Transaction t, Entry e) {
+    public static boolean isVersionSkip(TransactionManager tm, Transaction t, Entry e) throws IOException {
         long xmax = e.getXmax();
         if(t.level == 0) {
             return false;
@@ -13,7 +15,7 @@ public class Visibility {
         }
     }
 
-    public static boolean isVisible(TransactionManager tm, Transaction t, Entry e) {
+    public static boolean isVisible(TransactionManager tm, Transaction t, Entry e) throws IOException {
         if(t.level == 0) {
             return readCommitted(tm, t, e);
         } else {
@@ -21,7 +23,7 @@ public class Visibility {
         }
     }
 
-    private static boolean readCommitted(TransactionManager tm, Transaction t, Entry e) {
+    private static boolean readCommitted(TransactionManager tm, Transaction t, Entry e) throws IOException {
         long xid = t.xid;
         long xmin = e.getXmin();
         long xmax = e.getXmax();
@@ -38,7 +40,7 @@ public class Visibility {
         return false;
     }
 
-    private static boolean repeatableRead(TransactionManager tm, Transaction t, Entry e) {
+    private static boolean repeatableRead(TransactionManager tm, Transaction t, Entry e) throws IOException {
         long xid = t.xid;
         long xmin = e.getXmin();
         long xmax = e.getXmax();

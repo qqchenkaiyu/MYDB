@@ -15,6 +15,8 @@ import top.guoziyang.mydb.backend.vm.VersionManager;
 import top.guoziyang.mydb.backend.vm.VersionManagerImpl;
 import top.guoziyang.mydb.common.Error;
 
+import java.io.IOException;
+
 public class Launcher {
 
     public static final int port = 9999;
@@ -24,7 +26,7 @@ public class Launcher {
 	public static final long MB = 1 << 20;
 	public static final long GB = 1 << 30;
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws Exception {
         Options options = new Options();
         options.addOption("open", true, "-open DBPath");
         options.addOption("create", true, "-create DBPath");
@@ -43,7 +45,7 @@ public class Launcher {
         System.out.println("Usage: launcher (open|create) DBPath");
     }
 
-    private static void createDB(String path) {
+    private static void createDB(String path) throws IOException {
         TransactionManager tm = TransactionManager.create(path);
         DataManager dm = DataManager.create(path, DEFALUT_MEM, tm);
         VersionManager vm = new VersionManagerImpl(tm, dm);
@@ -52,7 +54,7 @@ public class Launcher {
         dm.close();
     }
 
-    private static void openDB(String path, long mem) {
+    private static void openDB(String path, long mem) throws Exception {
         TransactionManager tm = TransactionManager.open(path);
         DataManager dm = DataManager.open(path, mem, tm);
         VersionManager vm = new VersionManagerImpl(tm, dm);

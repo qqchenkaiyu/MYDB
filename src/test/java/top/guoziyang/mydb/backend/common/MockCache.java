@@ -3,7 +3,6 @@ package top.guoziyang.mydb.backend.common;
 public class MockCache extends AbstractCache<Long> {
 
     public MockCache() {
-        super(50);
     }
 
     @Override

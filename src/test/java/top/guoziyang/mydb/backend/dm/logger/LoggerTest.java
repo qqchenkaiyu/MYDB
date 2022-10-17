@@ -1,12 +1,13 @@
 package top.guoziyang.mydb.backend.dm.logger;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 
 public class LoggerTest {
     @Test
-    public void testLogger() {
+    public void testLogger() throws IOException {
         Logger lg = Logger.create("/tmp/logger_test");
         lg.log("aaa".getBytes());
         lg.log("bbb".getBytes());

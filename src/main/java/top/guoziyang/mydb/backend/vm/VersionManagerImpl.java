@@ -1,5 +1,6 @@
 package top.guoziyang.mydb.backend.vm;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -21,7 +22,6 @@ public class VersionManagerImpl extends AbstractCache<Entry> implements VersionM
     LockTable lt;
 
     public VersionManagerImpl(TransactionManager tm, DataManager dm) {
-        super(0);
         this.tm = tm;
         this.dm = dm;
         this.activeTransaction = new HashMap<>();
@@ -132,7 +132,7 @@ public class VersionManagerImpl extends AbstractCache<Entry> implements VersionM
     }
 
     @Override
-    public long begin(int level) {
+    public long begin(int level) throws IOException {
         lock.lock();
         try {
             long xid = tm.begin();
@@ -169,11 +169,11 @@ public class VersionManagerImpl extends AbstractCache<Entry> implements VersionM
     }
 
     @Override
-    public void abort(long xid) {
+    public void abort(long xid) throws IOException {
         internAbort(xid, false);
     }
 
-    private void internAbort(long xid, boolean autoAborted) {
+    private void internAbort(long xid, boolean autoAborted) throws IOException {
         lock.lock();
         Transaction t = activeTransaction.get(xid);
         if(!autoAborted) {

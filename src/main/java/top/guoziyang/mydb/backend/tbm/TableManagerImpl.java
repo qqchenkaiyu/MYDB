@@ -1,5 +1,6 @@
 package top.guoziyang.mydb.backend.tbm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +57,7 @@ public class TableManagerImpl implements TableManager {
     }
 
     @Override
-    public BeginRes begin(Begin begin) {
+    public BeginRes begin(Begin begin) throws IOException {
         BeginRes res = new BeginRes();
         int level = begin.isRepeatableRead?1:0;
         res.xid = vm.begin(level);
@@ -69,7 +70,7 @@ public class TableManagerImpl implements TableManager {
         return "commit".getBytes();
     }
     @Override
-    public byte[] abort(long xid) {
+    public byte[] abort(long xid) throws IOException {
         vm.abort(xid);
         return "abort".getBytes();
     }

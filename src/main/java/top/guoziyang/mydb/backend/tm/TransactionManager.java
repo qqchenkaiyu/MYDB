@@ -1,5 +1,7 @@
 package top.guoziyang.mydb.backend.tm;
 
+import cn.hutool.core.io.FileUtil;
+
 import static top.guoziyang.mydb.backend.utils.Types.writeLong;
 
 import java.io.File;
@@ -17,7 +19,7 @@ public interface TransactionManager {
     void close();
 
     static TransactionManagerImpl create(String path) throws IOException {
-        File f = new File(path + TransactionManagerImpl.XID_SUFFIX);
+        File f = FileUtil.file(path + TransactionManagerImpl.XID_SUFFIX);
         f.createNewFile();
         RandomAccessFile raf = new RandomAccessFile(f, "rw");
         FileChannel fc = raf.getChannel();
@@ -27,7 +29,7 @@ public interface TransactionManager {
     }
 
     static TransactionManagerImpl open(String path) throws IOException {
-        File f = new File(path + TransactionManagerImpl.XID_SUFFIX);
+        File f = FileUtil.file(path + TransactionManagerImpl.XID_SUFFIX);
         f.createNewFile();
         RandomAccessFile raf = new RandomAccessFile(f, "rw");
         FileChannel fc = raf.getChannel();

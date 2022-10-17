@@ -1,6 +1,7 @@
 package top.guoziyang.mydb.backend.dm;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -113,7 +114,7 @@ public class DataManagerTest {
     }
 
     @Test
-    public void testDMMulti() throws InterruptedException {
+    public void testDMMulti() throws InterruptedException, IOException {
         TransactionManager tm0 = new MockTransactionManager();
         DataManager dm0 = DataManager.create("/tmp/TestDMMulti", PageCache.PAGE_SIZE*10, tm0);
         DataManager mdm = MockDataManager.newMockDataManager();
@@ -133,7 +134,7 @@ public class DataManagerTest {
     }
 
     @Test
-    public void testRecoverySimple() throws InterruptedException {
+    public void testRecoverySimple() throws Exception {
         TransactionManager tm0 = TransactionManager.create("/tmp/TestRecoverySimple");
         DataManager dm0 = DataManager.create("/tmp/TestRecoverySimple", PageCache.PAGE_SIZE*30, tm0);
         DataManager mdm = MockDataManager.newMockDataManager();

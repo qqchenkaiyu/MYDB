@@ -101,7 +101,11 @@ class HandleSocket implements Runnable {
                 break;
             }
         }
-        exe.close();
+        try {
+            exe.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         try {
             packager.close();
         } catch (Exception e) {

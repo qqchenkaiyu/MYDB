@@ -16,13 +16,13 @@ public class MockPageCache implements PageCache {
     private AtomicInteger noPages = new AtomicInteger(0);
     
     @Override
-    public int newPage(byte[] initData) {
+    public Page newPage(byte[] initData) {
         lock.lock();
         try {
             int pgno = noPages.incrementAndGet();
             MockPage pg = MockPage.newMockPage(pgno, initData);
             cache.put(pgno, pg);
-            return pgno;
+            return pg;
         } finally {
             lock.unlock();
         }

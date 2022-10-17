@@ -1,5 +1,6 @@
 package top.guoziyang.mydb.backend.dm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public class Recover {
         byte[] newRaw;
     }
 
-    public static void recover(TransactionManager tm, Logger lg, PageCache pc) {
+    public static void recover(TransactionManager tm, Logger lg, PageCache pc) throws IOException {
         System.out.println("Recovering...");
 
         lg.rewind();
@@ -77,7 +78,7 @@ public class Recover {
         System.out.println("Recovery Over.");
     }
 
-    private static void redoTranscations(TransactionManager tm, Logger lg, PageCache pc) {
+    private static void redoTranscations(TransactionManager tm, Logger lg, PageCache pc) throws IOException {
         lg.rewind();
         while(true) {
             byte[] log = lg.next();
@@ -98,7 +99,7 @@ public class Recover {
         }
     }
 
-    private static void undoTranscations(TransactionManager tm, Logger lg, PageCache pc) {
+    private static void undoTranscations(TransactionManager tm, Logger lg, PageCache pc) throws IOException {
         Map<Long, List<byte[]>> logCache = new HashMap<>();
         lg.rewind();
         while(true) {

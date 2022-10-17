@@ -1,6 +1,7 @@
 package top.guoziyang.mydb.backend.dm.pageCache;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
@@ -21,18 +22,18 @@ public class PageCacheTest {
     
     @Test
     public void testPageCache() throws Exception {
-        PageCache pc = PageCache.create("/tmp/pcacher_simple_test0", PageCache.PAGE_SIZE * 50);
+        PageCache pc = PageCache.open("/tmp/pcacher_simple_test0");
         for(int i = 0 ; i < 100; i ++) {
             byte[] tmp = new byte[PageCache.PAGE_SIZE];
             tmp[0] = (byte)i;
-            int pgno = pc.newPage(tmp);
-            Page pg = pc.getPage(pgno);
+            Page pg  = pc.newPage(tmp);
+            pg = pc.getPage(pg.getPageNumber());
             pg.setDirty(true);
             pg.release();
         }
         pc.close();
 
-        pc = PageCache.open("/tmp/pcacher_simple_test0", PageCache.PAGE_SIZE * 50);
+        pc = PageCache.open("/tmp/pcacher_simple_test0");
         for(int i = 1; i <= 100; i ++) {
             Page pg = pc.getPage(i);
             assert pg.getData()[0] == (byte)i-1;
@@ -48,7 +49,7 @@ public class PageCacheTest {
     private AtomicInteger noPages1;
     @Test
     public void testPageCacheMultiSimple() throws Exception {
-        pc1 = PageCache.create("/tmp/pcacher_simple_test1", PageCache.PAGE_SIZE * 50);
+        pc1 = PageCache.open("/tmp/pcacher_simple_test1");
         cdl1 = new CountDownLatch(200);
         noPages1 = new AtomicInteger(0);
         for(int i = 0; i < 200; i ++) {
@@ -65,10 +66,10 @@ public class PageCacheTest {
             int op = Math.abs(random.nextInt() % 20);
             if(op == 0) {
                 byte[] data = RandomUtil.randomBytes(PageCache.PAGE_SIZE);
-                int pgno = pc1.newPage(data);
+                Page pgno = pc1.newPage(data);
                 Page pg = null;
                 try {
-                    pg = pc1.getPage(pgno);
+                    pg = pc1.getPage(pgno.getPageNumber());
                 } catch (Exception e) {
                     Panic.panic(e);
                 }
@@ -98,8 +99,8 @@ public class PageCacheTest {
     private AtomicInteger noPages2;
     private Lock lockNew;
     @Test
-    public void testPageCacheMulti() throws InterruptedException {
-        pc2 = PageCache.create("/tmp/pcacher_multi_test", PageCache.PAGE_SIZE * 10);
+    public void testPageCacheMulti() throws InterruptedException, IOException {
+        pc2 = PageCache.open("/tmp/pcacher_multi_test");
         mpc = new MockPageCache();
         lockNew = new ReentrantLock();
 
@@ -123,8 +124,8 @@ public class PageCacheTest {
                 // new page
                 byte[] data = RandomUtil.randomBytes(PageCache.PAGE_SIZE);
                 lockNew.lock();
-                int pgno = pc2.newPage(data);
-                int mpgno = mpc.newPage(data);
+                Page pgno = pc2.newPage(data);
+                Page mpgno = mpc.newPage(data);
                 assert pgno == mpgno;
                 lockNew.unlock();
                 noPages2.incrementAndGet();

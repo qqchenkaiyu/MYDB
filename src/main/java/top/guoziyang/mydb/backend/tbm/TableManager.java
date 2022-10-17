@@ -10,10 +10,12 @@ import top.guoziyang.mydb.backend.parser.statement.Update;
 import top.guoziyang.mydb.backend.utils.Parser;
 import top.guoziyang.mydb.backend.vm.VersionManager;
 
+import java.io.IOException;
+
 public interface TableManager {
-    BeginRes begin(Begin begin);
+    BeginRes begin(Begin begin) throws IOException;
     byte[] commit(long xid) throws Exception;
-    byte[] abort(long xid);
+    byte[] abort(long xid) throws IOException;
 
     byte[] show(long xid);
     byte[] create(long xid, Create create) throws Exception;

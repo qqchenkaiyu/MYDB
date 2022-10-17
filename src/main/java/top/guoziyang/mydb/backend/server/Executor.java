@@ -14,6 +14,8 @@ import top.guoziyang.mydb.backend.tbm.BeginRes;
 import top.guoziyang.mydb.backend.tbm.TableManager;
 import top.guoziyang.mydb.common.Error;
 
+import java.io.IOException;
+
 public class Executor {
     private long xid;
     TableManager tbm;
@@ -23,7 +25,7 @@ public class Executor {
         this.xid = 0;
     }
 
-    public void close() {
+    public void close() throws IOException {
         if(xid != 0) {
             System.out.println("Abnormal Abort: " + xid);
             tbm.abort(xid);

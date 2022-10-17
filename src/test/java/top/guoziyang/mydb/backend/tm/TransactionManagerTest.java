@@ -1,6 +1,7 @@
 package top.guoziyang.mydb.backend.tm;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import cn.hutool.core.io.FileUtil;
 import org.junit.Test;
 
 public class TransactionManagerTest {
@@ -15,31 +17,37 @@ public class TransactionManagerTest {
     static Random random = new SecureRandom();
 
     private int transCnt = 0;
-    private int noWorkers = 50;
-    private int noWorks = 3000;
+    private int noWorkers = 10;
+    private int noWorks = 100;
     private Lock lock = new ReentrantLock();
     private TransactionManager tmger;
     private Map<Long, Byte> transMap;
     private CountDownLatch cdl;
 
     @Test
-    public void testMultiThread() {
-        tmger = TransactionManager.create("/tmp/tranmger_test");
+    public void testMultiThread() throws IOException {
+        tmger = TransactionManager.create("tranmger_test");
         transMap = new ConcurrentHashMap<>();
         cdl = new CountDownLatch(noWorkers);
         for(int i = 0; i < noWorkers; i ++) {
-            Runnable r = () -> worker();
-            new Thread(r).run();
+            new Thread(() -> {
+                try {
+                    worker();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         }
         try {
             cdl.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        assert new File("/tmp/tranmger_test.xid").delete();
+        tmger.close();
+        assert FileUtil.file("tranmger_test.xid").delete();
     }
 
-    private void worker() {
+    private void worker() throws IOException {
         boolean inTrans = false;
         long transXID = 0;
         for(int i = 0; i < noWorks; i ++) {
