@@ -1,42 +1,34 @@
 package top.guoziyang.mydb.backend.dm.pageIndex;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import top.guoziyang.mydb.backend.dm.pageCache.PageCache;
 
+import java.util.concurrent.ConcurrentLinkedDeque;
+
 public class PageIndex {
-    // 将一页划成40个区间
+    // 分为40个区间 409b的都在第一个区间 818b的都在第二个区间
     private static final int INTERVALS_NO = 40;
     private static final int THRESHOLD = PageCache.PAGE_SIZE / INTERVALS_NO;
 
-    private Lock lock;
-    private List<PageInfo>[] lists;
+    private ConcurrentLinkedDeque<PageInfo>[] lists;
+
+
 
     @SuppressWarnings("unchecked")
     public PageIndex() {
-        lock = new ReentrantLock();
-        lists = new List[INTERVALS_NO+1];
+        lists = new ConcurrentLinkedDeque[INTERVALS_NO+1];
         for (int i = 0; i < INTERVALS_NO+1; i ++) {
-            lists[i] = new ArrayList<>();
+            lists[i] = new ConcurrentLinkedDeque<>();
         }
     }
 
-    public void add(int pgno, int freeSpace) {
-        lock.lock();
-        try {
-            int number = freeSpace / THRESHOLD;
-            lists[number].add(new PageInfo(pgno, freeSpace));
-        } finally {
-            lock.unlock();
-        }
+    public PageInfo add(int pgno, int freeSpace) {
+        int number = freeSpace / THRESHOLD;
+        PageInfo pageInfo = new PageInfo(pgno, freeSpace);
+        lists[number].add(pageInfo);
+        return pageInfo;
     }
 
     public PageInfo select(int spaceSize) {
-        lock.lock();
-        try {
             int number = spaceSize / THRESHOLD;
             if(number < INTERVALS_NO) number ++;
             while(number <= INTERVALS_NO) {
@@ -44,12 +36,9 @@ public class PageIndex {
                     number ++;
                     continue;
                 }
-                return lists[number].remove(0);
+                return lists[number].removeFirst();
             }
             return null;
-        } finally {
-            lock.unlock();
-        }
     }
 
 }
